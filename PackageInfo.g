@@ -347,6 +347,8 @@ Dependencies := rec(
                    [ "RingsForHomalg", ">= 2013.07.14" ],
                    [ "Modules", ">= 2011.09.20" ],
                    [ "homalg", ">=2011.08.16" ],
+                   [ "Convex", ">=2011.08.16" ],
+                   [ "ToricIdeals", ">=0" ],
                    [ "GAPDoc", ">= 1.0" ] ],
   # without these the package will issue a warning while loading
   # SuggestedOtherPackages := [],
