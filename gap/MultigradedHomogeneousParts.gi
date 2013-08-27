@@ -72,15 +72,37 @@ HomogeneousPartOfDegreeZeroOfRing := function( ring, index_localized_variables )
     
     generators := Concatenation( generators[ 2 ], generators[ 3 ], -generators[ 3 ] );
     
+#     if Length( generators ) = 0 then
+#         
+#         generators := LatticePointsGenerators( polytope_of_module )[ 1 ];
+#         
+#     fi;
+    
     generating_set_of_new_ring := generators * matrix_of_kernel;
     
     relations_of_new_generating_set := KernelEmb( HomalgMap( HomalgMatrix( generating_set_of_new_ring, HomalgRing( degree_group ) ), "free"  ) );
     
     relations_of_new_generating_set := EntriesOfHomalgMatrixAsListList( MatrixOfMap( relations_of_new_generating_set ) );
     
-    generating_set_for_ideal := HOMALG_GRADED_RING!.groebner_basis_function_for_binomial_ideals( relations_of_new_generating_set );
+    if Length( relations_of_new_generating_set ) > 0 then
+        
+        generating_set_for_ideal := HOMALG_GRADED_RING!.groebner_basis_function_for_binomial_ideals( relations_of_new_generating_set );
+        
+    else
+        
+        generating_set_for_ideal := [ ];
+        
+    fi;
     
-    new_ring := UnderlyingNonGradedRing( CoefficientsRing( ring ) ) * Concatenation( "x1..", String( Length( generating_set_of_new_ring ) ) );
+    if Length( generating_set_of_new_ring ) > 0 then
+        
+        new_ring := UnderlyingNonGradedRing( CoefficientsRing( ring ) ) * Concatenation( "x1..", String( Length( generating_set_of_new_ring ) ) );
+        
+    else
+        
+        new_ring := CoefficientsRing( ring );
+        
+    fi;
     
     new_ring!.generators_as_module_elements := generating_set_of_new_ring;
     
@@ -88,7 +110,7 @@ HomogeneousPartOfDegreeZeroOfRing := function( ring, index_localized_variables )
     
     relations_list := [ ];
     
-    for i in relations_of_new_generating_set do
+    for i in generating_set_for_ideal do
         
         a := "1";
         
@@ -112,7 +134,11 @@ HomogeneousPartOfDegreeZeroOfRing := function( ring, index_localized_variables )
         
     od;
     
-    new_ring := new_ring / relations_list;
+    if Length( relations_list ) > 0 then
+        
+        new_ring := new_ring / relations_list;
+        
+    fi;
     
     # SetWeightsOfIndeterminates( new_ring, List( indeterminates_of_new_ring, i -> 0 ) );
     
@@ -140,7 +166,11 @@ HomogeneousPartOfDegreeZeroOfRing := function( ring, index_localized_variables )
     
     localized_ring := CoefficientsRing( ring )*localized_ring;
     
-    localized_ring := localized_ring / ideal_for_localized_ring;
+    if Length( index_localized_variables ) > 0 then
+        
+        localized_ring := localized_ring / ideal_for_localized_ring;
+        
+    fi;
     
     indeterminates_of_localized_ring := Indeterminates( localized_ring );
     
@@ -283,137 +313,141 @@ HomogeneousPartOfRing := function( ring, index_localized_variables, degree )
     
     inequalities_for_ring_cone := hom_part_of_degree_zero!.abstract_generators;
     
-    inequalities_for_ring_cone := Cone( inequalities_for_ring_cone );
-    
-    inequalities_for_ring_cone := DefiningInequalities( inequalities_for_ring_cone );
-    
     relation_matrix := [];
     
-    indeterminates_of_new_ring := Indeterminates( hom_part_of_degree_zero );
-    
-    nr_generators_hom_zero := Length( hom_part_of_degree_zero!.abstract_generators );
-    
-    relation_inequality := List( [ 1 .. nr_generators_hom_zero ], i -> List( [ 1 .. nr_generators_hom_zero + 1 ], j -> 0 ) );
-    
-    for i in [ 2 .. nr_generators_hom_zero + 1 ] do
+    if Length( inequalities_for_ring_cone ) > 0 then
         
-        relation_inequality[ i - 1 ][ i ] := 1;
+        inequalities_for_ring_cone := Cone( inequalities_for_ring_cone );
         
-    od;
-    
-    abstract_generators_of_degree_zero := hom_part_of_degree_zero!.abstract_generators;
-    
-    transposed_abstract_generators_of_degree_zero := TransposedMat( abstract_generators_of_degree_zero );
-    
-    for k in [ 1 .. Length( generators_of_module ) ] do
+        inequalities_for_ring_cone := DefiningInequalities( inequalities_for_ring_cone );
         
-        for l in [ k + 1 .. Length( generators_of_module ) ] do
+        indeterminates_of_new_ring := Indeterminates( hom_part_of_degree_zero );
+        
+        nr_generators_hom_zero := Length( hom_part_of_degree_zero!.abstract_generators );
+        
+        relation_inequality := List( [ 1 .. nr_generators_hom_zero ], i -> List( [ 1 .. nr_generators_hom_zero + 1 ], j -> 0 ) );
+        
+        for i in [ 2 .. nr_generators_hom_zero + 1 ] do
             
-            relation_polytope := [ ];
-            
-            for i in inequalities_for_ring_cone do
-                
-                Add( relation_polytope, Concatenation( [ - Maximum( i * generators_of_module[ k ], i * generators_of_module[ l ] ) ], i ) );
-                
-            od;
-            
-            relation_polytope := PolytopeByInequalities( relation_polytope );
-            
-            relation_polytope_lattice_points := LatticePointsGenerators( relation_polytope )[ 1 ];
-            
-            if Length( relation_polytope_lattice_points ) = 0 then
-                
-                continue;
-                
-            fi;
-            
-            for current_relation in relation_polytope_lattice_points do
-                
-                relation_matrix_entry := [ ];
-                
-                for i in [ 1 .. k - 1 ] do
-                    
-                    Add( relation_matrix_entry, "0" );
-                    
-                od;
-                
-                current_relation_a := current_relation - generators_of_module[ k ];
-                
-                solution_polytope_relation := [ ];
-                
-                for a in [ 1 .. Length( current_relation_a ) ] do
-                    
-                    Add( solution_polytope_relation, Concatenation( [ - current_relation_a[ a ] ], transposed_abstract_generators_of_degree_zero[ a ] ) );
-                    
-                    Add( solution_polytope_relation, Concatenation( [ current_relation_a[ a ] ], - transposed_abstract_generators_of_degree_zero[ a ] ) );
-                    
-                od;
-                
-                solution_polytope := PolytopeByInequalities( Concatenation( solution_polytope_relation, relation_inequality ) );
-                
-                solution_of_equation_of_relation := LatticePointsGenerators( solution_polytope )[ 1 ];
-                
-                if Length( solution_of_equation_of_relation ) = 0 then
-                    
-                    Error( "This should not happen" );
-                    
-                fi;
-                
-                solution_of_equation_of_relation := solution_of_equation_of_relation[ 1 ];
-                
-                Add( relation_matrix_entry, JoinStringsWithSeparator( 
-                                             List( [ 1 .. Length( solution_of_equation_of_relation ) ],
-                                                   i -> JoinStringsWithSeparator( [ indeterminates_of_new_ring[ i ], solution_of_equation_of_relation[ i ] ], 
-                                                                                  "^" ) ), "*" ) );
-                
-                for i in [ k + 1 .. l - 1 ] do
-                    
-                    Add( relation_matrix_entry, "0" );
-                    
-                od;
-                
-                current_relation_a := current_relation - generators_of_module[ l ];
-                
-                solution_polytope_relation := [ ];
-                
-                for a in [ 1 .. Length( current_relation_a ) ] do
-                    
-                    Add( solution_polytope_relation, Concatenation( [ - current_relation_a[ a ] ], transposed_abstract_generators_of_degree_zero[ a ] ) );
-                    
-                    Add( solution_polytope_relation, Concatenation( [ current_relation_a[ a ] ], - transposed_abstract_generators_of_degree_zero[ a ] ) );
-                    
-                od;
-                
-                solution_polytope := PolytopeByInequalities( Concatenation( solution_polytope_relation, relation_inequality ) );
-                
-                solution_of_equation_of_relation := LatticePointsGenerators( solution_polytope )[ 1 ];
-                
-                if Length( solution_of_equation_of_relation ) = 0 then
-                    
-                    Error( "This should not happen" );
-                    
-                fi;
-                
-                solution_of_equation_of_relation := solution_of_equation_of_relation[ 1 ];
-                
-                Add( relation_matrix_entry, JoinStringsWithSeparator(
-                                             List( [ 1 .. Length( solution_of_equation_of_relation ) ],
-                                                   i -> JoinStringsWithSeparator( [ indeterminates_of_new_ring[ i ], solution_of_equation_of_relation[ i ] ], 
-                                                                                  "^" ) ), "*" ) );
-                
-                for i in [ l + 1 .. Length( generators_of_module ) ] do
-                    
-                    Add( relation_matrix_entry, "0" );
-                    
-                od;
-                
-            od;
-            
-            Add( relation_matrix, JoinStringsWithSeparator( relation_matrix_entry, "," ) );
+            relation_inequality[ i - 1 ][ i ] := 1;
             
         od;
         
-    od;
+        abstract_generators_of_degree_zero := hom_part_of_degree_zero!.abstract_generators;
+        
+        transposed_abstract_generators_of_degree_zero := TransposedMat( abstract_generators_of_degree_zero );
+        
+        for k in [ 1 .. Length( generators_of_module ) ] do
+            
+            for l in [ k + 1 .. Length( generators_of_module ) ] do
+                
+                relation_polytope := [ ];
+                
+                for i in inequalities_for_ring_cone do
+                    
+                    Add( relation_polytope, Concatenation( [ - Maximum( i * generators_of_module[ k ], i * generators_of_module[ l ] ) ], i ) );
+                    
+                od;
+                
+                relation_polytope := PolytopeByInequalities( relation_polytope );
+                
+                relation_polytope_lattice_points := LatticePointsGenerators( relation_polytope )[ 1 ];
+                
+                if Length( relation_polytope_lattice_points ) = 0 then
+                    
+                    continue;
+                    
+                fi;
+                
+                for current_relation in relation_polytope_lattice_points do
+                    
+                    relation_matrix_entry := [ ];
+                    
+                    for i in [ 1 .. k - 1 ] do
+                        
+                        Add( relation_matrix_entry, "0" );
+                        
+                    od;
+                    
+                    current_relation_a := current_relation - generators_of_module[ k ];
+                    
+                    solution_polytope_relation := [ ];
+                    
+                    for a in [ 1 .. Length( current_relation_a ) ] do
+                        
+                        Add( solution_polytope_relation, Concatenation( [ - current_relation_a[ a ] ], transposed_abstract_generators_of_degree_zero[ a ] ) );
+                        
+                        Add( solution_polytope_relation, Concatenation( [ current_relation_a[ a ] ], - transposed_abstract_generators_of_degree_zero[ a ] ) );
+                        
+                    od;
+                    
+                    solution_polytope := PolytopeByInequalities( Concatenation( solution_polytope_relation, relation_inequality ) );
+                    
+                    solution_of_equation_of_relation := LatticePointsGenerators( solution_polytope )[ 1 ];
+                    
+                    if Length( solution_of_equation_of_relation ) = 0 then
+                        
+                        Error( "This should not happen" );
+                        
+                    fi;
+                    
+                    solution_of_equation_of_relation := solution_of_equation_of_relation[ 1 ];
+                    
+                    Add( relation_matrix_entry, JoinStringsWithSeparator( 
+                                                List( [ 1 .. Length( solution_of_equation_of_relation ) ],
+                                                      i -> JoinStringsWithSeparator( [ indeterminates_of_new_ring[ i ], solution_of_equation_of_relation[ i ] ], 
+                                                                                      "^" ) ), "*" ) );
+                    
+                    for i in [ k + 1 .. l - 1 ] do
+                        
+                        Add( relation_matrix_entry, "0" );
+                        
+                    od;
+                    
+                    current_relation_a := current_relation - generators_of_module[ l ];
+                    
+                    solution_polytope_relation := [ ];
+                    
+                    for a in [ 1 .. Length( current_relation_a ) ] do
+                        
+                        Add( solution_polytope_relation, Concatenation( [ - current_relation_a[ a ] ], transposed_abstract_generators_of_degree_zero[ a ] ) );
+                        
+                        Add( solution_polytope_relation, Concatenation( [ current_relation_a[ a ] ], - transposed_abstract_generators_of_degree_zero[ a ] ) );
+                        
+                    od;
+                    
+                    solution_polytope := PolytopeByInequalities( Concatenation( solution_polytope_relation, relation_inequality ) );
+                    
+                    solution_of_equation_of_relation := LatticePointsGenerators( solution_polytope )[ 1 ];
+                    
+                    if Length( solution_of_equation_of_relation ) = 0 then
+                        
+                        Error( "This should not happen" );
+                        
+                    fi;
+                    
+                    solution_of_equation_of_relation := solution_of_equation_of_relation[ 1 ];
+                    
+                    Add( relation_matrix_entry, JoinStringsWithSeparator(
+                                                List( [ 1 .. Length( solution_of_equation_of_relation ) ],
+                                                      i -> JoinStringsWithSeparator( [ indeterminates_of_new_ring[ i ], solution_of_equation_of_relation[ i ] ], 
+                                                                                      "^" ) ), "*" ) );
+                    
+                    for i in [ l + 1 .. Length( generators_of_module ) ] do
+                        
+                        Add( relation_matrix_entry, "0" );
+                        
+                    od;
+                    
+                od;
+                
+                Add( relation_matrix, JoinStringsWithSeparator( relation_matrix_entry, "," ) );
+                
+            od;
+            
+        od;
+        
+    fi;
     
     nr_of_relations := Length( relation_matrix );
     
@@ -421,7 +455,15 @@ HomogeneousPartOfRing := function( ring, index_localized_variables, degree )
     
     relation_matrix := Concatenation( "[", relation_matrix, "]" );
     
-    relation_matrix := HomalgMatrix( relation_matrix, nr_of_relations, Length( generators_of_module ), hom_part_of_degree_zero );
+    if nr_of_relations = 0 then
+        
+        relation_matrix := HomalgZeroMatrix( 0, Length( generators_of_module ), hom_part_of_degree_zero );
+        
+    else
+        
+        relation_matrix := HomalgMatrix( relation_matrix, nr_of_relations, Length( generators_of_module ), hom_part_of_degree_zero );
+        
+    fi;
     
     map_of_module := HomalgMap( relation_matrix, "free", hom_part_of_degree_zero );
     
