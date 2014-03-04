@@ -467,8 +467,6 @@ HomogeneousPartOfRing := function( ring, index_localized_variables, degree )
     
     map_of_module := HomalgMap( relation_matrix, "free", hom_part_of_degree_zero );
     
-    
-    
     return map_of_module;
     
 end;
