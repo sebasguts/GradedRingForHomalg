@@ -1,8 +1,8 @@
 LoadPackage( "4ti2Interface" );
 LoadPackage( "ToricIdeals" );
-#LoadPackage( "ToricVarieties" );
+LoadPackage( "ToricVarieties" );
 
-if IsPackageMarkedForLoading( "4ti2Interface", ">=2013.03.19" ) then
+if IsPackageMarkedForLoading( "4ti2Interface", ">=2014.04.03" ) then
     
     Print( "4ti2 is used for groebner basis.\n" );
     
@@ -14,7 +14,7 @@ elif IsPackageMarkedForLoading( "ToricIdeals", ">=2011.01.01" ) then
     
     HOMALG_GRADED_RING.groebner_basis_function_for_binomial_ideals := GensetForToricIdeal;
     
-elif IsPackageMarkedForLoading( "ToricVarieties", ">=2012.11.07" ) then
+elif IsPackageMarkedForLoading( "ToricVarieties", ">=2013.07.29" ) then
     
     Print( "ToricVarieties fallback method is used for groebner basis.\n" );
     
